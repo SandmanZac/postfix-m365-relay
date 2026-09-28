@@ -49,42 +49,15 @@ lowercased parameter `<name>`. Variables can come from `docker run -e`, compose
 | `POSTFIX_MYHOSTNAME` | container hostname |
 | `POSTFIX_SMTP_TLS_SECURITY_LEVEL` | `encrypt` |
 
-### Changing `smtpd_recipient_restrictions`
+### Changing `IP Restrictions`
 
 Set it in `.env`:
 
 ```
-POSTFIX_SMTPD_RECIPIENT_RESTRICTIONS=permit_mynetworks,reject_unauth_destination
+POSTFIX_MYNETWORKS=10.252.13.171/32, 10.100.1.0/24, 127.0.0.0/8
 ```
-
-Or one-off: `docker run -e POSTFIX_SMTPD_RECIPIENT_RESTRICTIONS="..." ...`
-
-Restrictions are evaluated in order and the first match wins, so put `reject`/`check_*`
-rules **before** `permit_mynetworks`. Example that only allows recipients
-listed in a regexp map:
-
-`config/recipient_access.regexp`
-```
-/@contoso\.com$/    OK
-/@partner\.example$/ OK
-/./                 REJECT Recipient domain not allowed
-```
-
-`.env`
-```
-POSTFIX_SMTPD_RECIPIENT_RESTRICTIONS=check_recipient_access regexp:/config/recipient_access.regexp,permit_mynetworks,reject_unauth_destination
-```
-
-(mount `./config:/config:ro`; regexp maps need no `postmap`.)
-
-Note that `smtpd_relay_restrictions` (Postfix default: `permit_mynetworks, permit_sasl_authenticated, defer_unauth_destination`)
-is evaluated first; recipient restrictions can only narrow what it allows. Override it with
-`POSTFIX_SMTPD_RELAY_RESTRICTIONS` if needed.
 
 ## Security notes
 
 - This is an open relay for anything inside `POSTFIX_MYNETWORKS`. Don't publish port 25
   to the internet, and narrow `POSTFIX_MYNETWORKS` to your actual client subnets.
-- `smtp_tls_security_level=encrypt` enforces TLS but doesn't verify the Microsoft cert
-  name; use `POSTFIX_SMTP_TLS_SECURITY_LEVEL=verify` if you want strict verification
-  (the default match rule checks the certificate against the smart host name).
