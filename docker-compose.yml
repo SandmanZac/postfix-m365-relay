@@ -1,0 +1,17 @@
+services:
+  postfix-relay:
+    build: .
+    image: postfix-m365-relay:latest
+    container_name: postfix-m365-relay
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "${SMTP_PORT:-25}:25"
+    volumes:
+      - postfix-spool:/var/spool/postfix
+      # Optional extras (uncomment as needed):
+      # - ./config:/config:ro     # relay.env and/or recipient_access.regexp
+      # - ./certs:/certs:ro       # client cert/key for a certificate-based connector
+
+volumes:
+  postfix-spool:
